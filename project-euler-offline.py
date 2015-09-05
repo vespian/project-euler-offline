@@ -1,44 +1,55 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 project-euler-offline.py
 Christopher Su
 Checks solutions to Project Euler problems offline.
 '''
 
-import os
+import base64
 import json
-from pyDes import *
+import logging
+import sys
+
+from Crypto.Cipher import AES
+
+MASTER_KEY = "03b5660c7c16a07bovIddIdhi4OxUcGinph"
+
 
 def loadJSON(jsonStr):
     try:
         data = json.loads(jsonStr)
     except ValueError:
-        logging.exception("Error parsing %s." % json_file)
+        logging.exception("Error parsing:\n%s" % jsonStr)
         sys.exit(1)
     return data
 
+
+def decrypt_val(cipher_text):
+    dec_secret = AES.new(MASTER_KEY[:32])
+    raw_decrypted = dec_secret.decrypt(base64.b64decode(cipher_text)).decode("utf-8")
+    clear_val = raw_decrypted.rstrip("\0")
+    return clear_val
+
+
 def main():
-    dir = os.path.dirname(__file__)
-    txtFile = open(os.path.join(dir, "solutions-encrypted"), "r")
-    txtStr = txtFile.read()
-    txtFile.close()
-    plain_text = triple_des('03b5660c7c16a07b').decrypt(txtStr, padmode=2)
+    with open("./solutions-encrypted", "r") as fh:
+        txtStr = fh.read()
+    plain_text = decrypt_val(txtStr)
     solutions = loadJSON(plain_text)
 
-    current = raw_input("What problem are you currently working on? ")
+    current = input("What problem are you currently working on? ")
 
     while True:
-        proposed = raw_input("\nEnter solution: ")
+        proposed = input("\nEnter solution: ")
         if proposed == "exit":
             break
         elif proposed == solutions[current]:
-            print "Correct!"
-            current = raw_input("\nWhat problem are you working on? ")
+            print("Correct!")
+            current = input("\nWhat problem are you working on? ")
             if current == "exit":
                 break
         else:
-            print "Sorry, that is incorrect."
+            print("Sorry, that is incorrect.")
 
 if __name__ == "__main__":
-    dir = os.path.dirname(__file__)
     main()
